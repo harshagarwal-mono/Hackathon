@@ -1,0 +1,15 @@
+syntax = "proto3";
+option csharp_namespace = "GrpcServices";
+
+service FireAndForget {
+    rpc FireAndForget (FireAndForgetRequest) returns (FireAndForgetResponse);
+}
+
+message FireAndForgetRequest {
+    string type = 1;
+    string data = 2;
+}
+
+message FireAndForgetResponse {
+    
+}

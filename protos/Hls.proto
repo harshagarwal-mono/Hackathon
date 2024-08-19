@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option csharp_namespace = "HlsGrpcServices";
+
+import "Base.proto";
+
+service MachineInfo {
+    rpc MachineId (RequestMachineId) returns (ResponseMachineId);
+}
+
+service FireAndForget {
+    rpc FireAndForget (FireAndForgetRequest) returns (FireAndForgetResponse);
+}
+
+message FireAndForgetRequest {
+    string type = 1;
+    string data = 2;
+}
+
+message FireAndForgetResponse {
+}
+
+message ResponseMachineId {
+  int32 ErrorCode = 1;
+  string ErrorMessage = 2;
+  string MachineId = 3;
+}
+
+message RequestMachineId {
+  string AccessToken = 1;
+}

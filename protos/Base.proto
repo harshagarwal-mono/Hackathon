@@ -1,0 +1,25 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "BaseGrpcServices";
+
+service PingPong {
+  rpc Ping (Empty) returns (Pong);
+}
+
+service Authentication {
+  rpc RequestAccessToken (AccessRequest) returns (AccessResponse);
+}
+
+message Pong {}
+
+message Empty {}
+
+message AccessRequest {
+  string SecretKey = 1;
+}
+
+message AccessResponse {
+  bool IsAccessGranted = 1;
+  string AccessToken = 2;
+}
+

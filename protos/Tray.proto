@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+option csharp_namespace = "TrayGrpcServices";
+
+import "Base.proto";
+
+service UpdateNotificationService {
+    rpc NotifyUpdateState(UpdateState) returns (UpdateNotificationResponse);
+    rpc NotifyUpdateDownloadResponse(UpdateDownloadResponse) returns (UpdateNotificationResponse);
+    rpc NotifyUpdateInstallResponse(UpdateInstallResponse) returns (UpdateNotificationResponse);
+}
+
+service FireAndForget {
+    rpc FireAndForget (FireAndForgetRequest) returns (FireAndForgetResponse);
+}
+
+message FireAndForgetRequest {
+    string type = 1;
+    string data = 2;
+}
+
+message FireAndForgetResponse {
+    
+}
+
+message UpdateNotificationResponse {
+    int32 ErrorCode = 1;
+    string ErrorMessage  = 2;
+}
+
+message UpdateState {
+    bool IsAvailaible = 1;
+    bool IsCritical = 2;
+    string Version = 3;
+    string ReleaseNote = 4;
+    int32 ErrorCode = 5;
+    string ErrorMessage  = 6;
+    bool IsDownloaded = 7;
+    //need to discuss
+    bool PrevDownloadNotMacthed = 8;
+    string AccessToken = 9;
+}
+
+message UpdateDownloadResponse {
+    int32 ErrorCode = 1;
+    string ErrorMessage  = 2;
+    bool IsCritical = 3;
+    string AccessToken = 4;
+}
+
+message UpdateInstallResponse {
+    int32 ErrorCode = 1;
+    string ErrorMessage  = 2;
+    bool IsCritical = 3;
+    string AccessToken = 4;
+}
