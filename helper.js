@@ -1,7 +1,7 @@
 const { map, } = require('ramda');
 const fetch = require('electron-fetch').default;
 const fs = require('fs');
-const unzipper = require('unzipper');
+const extract = require('extract-zip');
 const path = require('path');
 const { isEmptyOrNil } = require('./utils');
 
@@ -80,9 +80,7 @@ const unzipFile = async (zipFilePath, outputDir) => {
         fs.mkdirSync(outputDir, { recursive: true });
     }
     
-    return fs.createReadStream(zipFilePath)
-        .pipe(unzipper.Extract({ path: outputDir }))
-        .promise();
+   await extract(zipFilePath, { dir: outputDir });
 };
 
 const getDownloadPathForFont = (fontsDir, fontMd5) => {

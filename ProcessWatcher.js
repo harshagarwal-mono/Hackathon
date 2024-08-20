@@ -9,7 +9,11 @@ class ProcessWatcher {
   }
 
   startProcess() {
-    this.process = spawn(this.processPath, []);
+    this.process = spawn(this.processPath, [], {
+        stdio: "inherit",
+        windowsHide: true,
+        detached: false,
+    });
 
     return new Promise((resolve) => {
       this.process.on("exit", (code, signal) => {
@@ -50,6 +54,7 @@ class ProcessWatcher {
     if (this.process) {
       this.process.removeAllListeners();
       this.process.kill();
+      this.process = null;
       console.log(`Stopped process: ${this.processPath}`);
     }
   }
