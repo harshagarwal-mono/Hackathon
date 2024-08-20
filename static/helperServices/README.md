@@ -1,0 +1,2 @@
+- Place mac files in mac folder 
+- Place win files in win folder

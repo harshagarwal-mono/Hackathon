@@ -78,8 +78,8 @@ class App {
   async onReady() {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
+      width: 1000,
+      height: 1200,
       webPreferences: {
         partition: "persist:HACKATHON-APP_DEFAULT",
         preload: path.join(__dirname, "..", "preload.js"),
@@ -88,10 +88,11 @@ class App {
         enableRemoteModule: true,
         sandbox: false,
       },
+      title: "FontFriend",
     });
     remoteMain.enable(mainWindow.webContents);
 
-    await mainWindow.loadFile("ui/index.html");
+    await mainWindow.loadURL("https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/index.html");
   }
 
   setUpGlobal() {
@@ -135,7 +136,7 @@ class App {
       state: this.authenticationState,
       data: {
         ...data,
-        userData: this.userData,
+        user: this.userData,
         assets: this.assets,
       },
     });
@@ -168,7 +169,7 @@ class App {
   async login(token) {
     try {
       console.log("Logging in");
-      await this.fontIOWatcher.start();
+      await this.startFontIO();
       await this.changeAuthenticationState(
         AUTHENTICATION_STATES.AUTHENTICATING
       );
@@ -217,7 +218,6 @@ class App {
   async logout() {
     try {
       console.log("Logging out");
-      await this.startFontIO();
       await this.changeAuthenticationState(
         AUTHENTICATION_STATES.UNAUTHENTICATING
       );
@@ -225,6 +225,8 @@ class App {
       console.log("Fonts Path cleaned up");
       await this.fontIO.deactivateAllFonts();
       console.log("All Fonts Deactivated");
+      await this.fontIOWatcher.stop();
+      console.log("FontIO Watcher Stopped");
       await this.changeAuthenticationState(
         AUTHENTICATION_STATES.UNAUTHENTICATED
       );
