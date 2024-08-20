@@ -22,6 +22,8 @@ const getConfig = () => {
         files: [
             'dist/main.bundle.js',
             'dist/preload.bundle.js',
+            'dist/protos/*',
+            'dist/protos/**/*',
         ],
         extraResources: [
             {

@@ -82,7 +82,7 @@ class App {
       height: 1200,
       webPreferences: {
         partition: "persist:HACKATHON-APP_DEFAULT",
-        preload: path.join(__dirname, "..", "preload.js"),
+        preload: path.join(__dirname, "preload.bundle.js"),
         contextIsolation: false,
         nodeIntegration: false,
         enableRemoteModule: true,

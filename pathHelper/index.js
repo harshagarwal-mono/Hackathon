@@ -24,6 +24,7 @@ const getFontIOPath = () => {
 };
 
 module.exports = {
-    getAppPath,
     getFontIOPath,
+    getResourcesDir,
+    getExePath,
 };

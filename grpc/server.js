@@ -4,7 +4,7 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const { isEmptyOrNil } = require('../utils');
 
-const trayProtoPath = path.join(__dirname, '..', 'protos', 'Tray.proto');
+const trayProtoPath = path.join(__dirname, 'protos', 'Tray.proto');
 const packageDefinition = protoLoader.loadSync(trayProtoPath);
 const trayProto = grpc.loadPackageDefinition(packageDefinition);
 

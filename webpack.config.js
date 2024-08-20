@@ -1,7 +1,8 @@
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
 const rootPath = `${__dirname}`;
 const srcPath = `${rootPath}`;
 const outputPath = `${rootPath}/bundle`;
-
 
 module.exports = () => ({
     devtool: 'source-map',
@@ -19,4 +20,14 @@ module.exports = () => ({
     node: {
         __dirname: false,
     },
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: `${__dirname}/protos`,
+                    to: `${outputPath}/dist/protos`,
+                },
+            ],
+        }),
+    ],
 });
