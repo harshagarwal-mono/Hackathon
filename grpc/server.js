@@ -16,7 +16,7 @@ function FireAndForget(relay, call, cb) {
     const { request, } = call;
     const { type, data, } = request;
 
-    console.log('Received Message on Grpc Server: ', type, data);
+    console.log('Received Message on Grpc Server: ', type);
 
     try {
         const parsedData = isEmptyOrNil(data) ? {} : JSON.parse(data);

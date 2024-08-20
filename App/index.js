@@ -20,6 +20,8 @@ const {
   getDownloadPathForFont,
 } = require("../helper.js");
 const { isEmptyOrNil } = require("../utils/index.js");
+const { getFontIOPath } = require("../pathHelper/index.js");
+const ProcessWatcher = require("../ProcessWatcher.js");
 
 const appDataPath = app.getPath("appData");
 const userDataPath = app.getPath("userData");
@@ -56,6 +58,8 @@ class App {
     this.assets = [];
     this.zipDownloadPath = path.join(userDataPath, "downloads");
     this.fontsPath = path.join(appDataPath, "Monotype Fonts", ".fonts");
+    this.fontIOPath = getFontIOPath();
+    this.fontIOWatcher = new ProcessWatcher(this.relay, this.fontIOPath, "FontIO");
 
     this.serverEndPoint = connectionInputGrcpServer[process.platform].endPoint;
     this.connectionEndPoint =
@@ -164,6 +168,7 @@ class App {
   async login(token) {
     try {
       console.log("Logging in");
+      await this.fontIOWatcher.start();
       await this.changeAuthenticationState(
         AUTHENTICATION_STATES.AUTHENTICATING
       );
@@ -212,6 +217,7 @@ class App {
   async logout() {
     try {
       console.log("Logging out");
+      await this.startFontIO();
       await this.changeAuthenticationState(
         AUTHENTICATION_STATES.UNAUTHENTICATING
       );
@@ -234,6 +240,17 @@ class App {
         errorMesssage: error.message,
       });
     }
+  }
+
+  async startFontIO() {
+    return new Promise(async (resolve) => {
+      const handleFontIOInit = () => {
+        this.relay.removeListener("FetchInstalledFontCanStartResponse", handleFontIOInit);
+        resolve(true);
+      }
+      this.relay.on('FetchInstalledFontCanStartResponse', handleFontIOInit);
+      this.fontIOWatcher.start();
+    });
   }
 
   setUpStoreData() {
