@@ -1,7 +1,8 @@
-const { reduce, pipe } = require('ramda');
+const { reduce, pipe, map } = require('ramda');
 const { v4 } = require('uuid');
 
 const FONT_ACTIVATION_DEACTIVATION_RESPONSE = "FontOperationStatusResponse";
+const DEACTIVATE_ALL_MONOTYPEFONTS_STATUS_RESPONSE = "DeactivateAllMonotypeFontStatusResponse";
 
 class FontIO {
     constructor(fontIOclient, relay) {
@@ -12,7 +13,7 @@ class FontIO {
     async activateOrDeactivateFonts(data, activate = true) {
         const requestId = v4();
 
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             const handleFontIOResponse = (response) => {
                 const { RequestId, Assets } = response; 
 
@@ -41,7 +42,27 @@ class FontIO {
 
             const method = activate ? 'requestToActivateFonts' : 'requestToDeactivateFonts';
 
-            this.fontIOclient[method](requestId, data);
+            const requestSent = await this.fontIOclient[method](requestId, data);
+
+            if (!requestSent) {
+                resolve({});
+            }
+        });
+    }
+
+    async deactivateAllFonts() {
+        return new Promise(async (resolve) => {
+            const handleFontIOResponse = (response) => {
+                resolve(true);
+            };
+
+            this.relay.on(DEACTIVATE_ALL_MONOTYPEFONTS_STATUS_RESPONSE, handleFontIOResponse);
+
+            const requestSent = await this.fontIOclient.requestDeactivateAllFonts();
+
+            if (!requestSent) {
+                resolve(false);
+            }
         });
     }
 

@@ -9,6 +9,7 @@ const fontIOProto = grpc.loadPackageDefinition(packageDefinition);
 const grpcCallTimeout = 10000;
 const ACTIVATE_FONTS = "ActivateFonts";
 const DEACTIVATE_FONTS = "DeactivateFonts";
+const REQUEST_DEACTIVATE_ALL_MONOTYPE_FONTS = "RequestDeactivateAllMonotypeFonts";
 
 
 /**
@@ -30,11 +31,11 @@ class FontIOClient {
      * @param {Array<Object>} data 
      */
     requestToActivateFonts(requestId, data) {
-        const preparedData = data.map(({ fontId, fontPath, context }) => {
+        const preparedData = data.map(({ fontId, fontDownloadPath, context = '' }) => {
             return {
                 FontId: fontId,
-                FontPath: fontPath,
-                Conetext: context,
+                FontPath: fontDownloadPath,
+                Context: context,
             };
         });
         const messageData = {
@@ -52,11 +53,11 @@ class FontIOClient {
      * @returns 
      */
     requestToDeactivateFonts(requestId, data) {
-        const preparedData = data.map(({ fontId, fontPath, context }) => {
+        const preparedData = data.map(({ fontId, fontDownloadPath, context = '' }) => {
             return {
                 FontId: fontId,
-                FontPath: fontPath,
-                Conetext: context,
+                FontPath: fontDownloadPath,
+                Context: context,
             };
         });
         const messageData = {
@@ -65,6 +66,10 @@ class FontIOClient {
         };
 
         return this.fireAndForgetRequest(DEACTIVATE_FONTS, messageData);
+    }
+
+    requestDeactivateAllFonts() {
+        return this.fireAndForgetRequest(REQUEST_DEACTIVATE_ALL_MONOTYPE_FONTS);
     }
 
     /**

@@ -1,17 +1,19 @@
-/**
- * The preload script runs before. It has access to web APIs
- * as well as Electron's renderer process modules and some
- * polyfilled Node.js functions.
- *
- * https://www.electronjs.org/docs/latest/tutorial/sandbox
- */
-window.addEventListener('DOMContentLoaded', () => {
-  const replaceText = (selector, text) => {
-    const element = document.getElementById(selector)
-    if (element) element.innerText = text
-  }
+const remote = require('@electron/remote');
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
-  }
-})
+const preloadDefinition = () => {
+  const preload = () => {
+      const {
+          relay,
+      } = remote.getGlobal('MAS_APP');
+
+      global.MAS_APP = {
+         relay,
+      };
+  };
+
+  process.once('loaded', preload);
+};
+
+preloadDefinition();
+
+module.exports = preloadDefinition;

@@ -1,6 +1,6 @@
 {
-  "name": "GlyphFriend",
-  "productName": "GlyphFriend",
+  "name": "fontfriend",
+  "productName": "FontFriend",
   "description": "Hackathon Project",
   "keywords": [],
   "main": "./main.js",
@@ -14,6 +14,7 @@
     "lint": "echo \"No linting configured\""
   },
   "dependencies": {
+    "@electron/remote": "^2.1.2",
     "@grpc/grpc-js": "^1.11.1",
     "@grpc/proto-loader": "^0.7.13",
     "electron-fetch": "^1.9.1",
@@ -28,7 +29,7 @@
     "@electron-forge/maker-rpm": "6.1.1",
     "@electron-forge/maker-squirrel": "6.1.1",
     "@electron-forge/maker-zip": "6.1.1",
-    "electron": "25.0.1"
+    "electron": "29.1.4"
   },
   "config": {
     "forge": {

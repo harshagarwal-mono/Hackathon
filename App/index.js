@@ -1,13 +1,28 @@
-const { app, ipcMain, BrowserWindow } = require("electron");
-const path = require('path');
+const { app, BrowserWindow } = require("electron");
+const fs = require("fs");
+const path = require("path");
+const remoteMain = require("@electron/remote/main");
 const { userInfo } = require("os");
 const GrpcServer = require("../grpc/server.js");
 const FontIOClient = require("../grpc/fontio-client.js");
 const FontIO = require("../FontIO");
 const Relay = require("../Relay.js");
 const Store = require("../store.js");
+const {
+  AUTHENTICATION_STATES,
+  ASSETS_STATES,
+} = require("../constants/index.js");
+const {
+  getUserData,
+  getAssetsMetaData,
+  downloadFiles,
+  unzipFile,
+  getDownloadPathForFont,
+} = require("../helper.js");
+const { isEmptyOrNil } = require("../utils/index.js");
 
 const appDataPath = app.getPath("appData");
+const userDataPath = app.getPath("userData");
 const CURRENTUSER = userInfo().username;
 const USER_SOCKETS_DIR = `${appDataPath}/Monotype Fonts/.sockets`;
 
@@ -38,7 +53,9 @@ class App {
     this.relay = new Relay();
     this.store = new Store();
     this.userData = null;
-    
+    this.assets = [];
+    this.zipDownloadPath = path.join(userDataPath, "downloads");
+    this.fontsPath = path.join(appDataPath, "Monotype Fonts", ".fonts");
 
     this.serverEndPoint = connectionInputGrcpServer[process.platform].endPoint;
     this.connectionEndPoint =
@@ -46,24 +63,36 @@ class App {
   }
 
   async init() {
-    this.setUpAuthenticationData();
+    this.setUpGlobal();
+    this.setUpStoreData();
+    this.setUpListeners();
     await this.setUpGrpcServer();
     this.setUpFontIOClient();
     this.setUpFontIO();
   }
 
-  onReady() {
+  async onReady() {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
       width: 800,
       height: 600,
       webPreferences: {
+        partition: "persist:HACKATHON-APP_DEFAULT",
         preload: path.join(__dirname, "..", "preload.js"),
+        contextIsolation: false,
+        nodeIntegration: false,
+        enableRemoteModule: true,
+        sandbox: false,
       },
     });
+    remoteMain.enable(mainWindow.webContents);
 
-    // and load the index.html of the app.
-    mainWindow.loadFile("ui/index.html");
+    await mainWindow.loadFile("ui/index.html");
+  }
+
+  setUpGlobal() {
+    global.MAS_APP = {};
+    global.MAS_APP.relay = this.relay;
   }
 
   async setUpGrpcServer() {
@@ -83,18 +112,180 @@ class App {
     this.fontIO = new FontIO(this.fontIOClient, this.relay);
   }
 
-  setUPIPcMainListeners() {
-    ipcMain.handle("check-authentication-state", () => {
-      return this.authenticationState;
+  setUpListeners() {
+    this.relay.on(
+      "checkAuthenticationState",
+      this.checkAuthenticationState.bind(this)
+    );
+    this.relay.on("login", this.hanldeLoginRequest.bind(this));
+    this.relay.on("logout", this.handleLogoutRequest.bind(this));
+  }
+
+  checkAuthenticationState() {
+    console.log("Checking Authentication State");
+    this.sendLoginData();
+  }
+
+  sendLoginData(data = {}) {
+    this.relay.emit("loginResponse", {
+      state: this.authenticationState,
+      data: {
+        ...data,
+        userData: this.userData,
+        assets: this.assets,
+      },
     });
   }
 
-  setUpAuthenticationData() {
-    this.authenticationState = this.store.get("authenticationState");
-    this.userData = this.store.get("user");
+  async hanldeLoginRequest({ token }) {
+    if (this.authenticationState === AUTHENTICATION_STATES.AUTHENTICATED) {
+      console.log("Already authenticated");
+      return;
+    }
+    if (this.authenticationState === AUTHENTICATION_STATES.AUTHENTICATING) {
+      console.log("Already authenticating");
+      return;
+    }
+    this.login(token);
   }
 
-  downloadAndInstallFonts(token) {}
+  async handleLogoutRequest() {
+    if (this.authenticationState === AUTHENTICATION_STATES.UNAUTHENTICATED) {
+      console.log("Already unauthenticated");
+      return;
+    }
+    if (this.authenticationState === AUTHENTICATION_STATES.UNAUTHENTICATING) {
+      console.log("Already unauthenticating");
+      return;
+    }
+    this.logout();
+  }
+
+  async login(token) {
+    try {
+      console.log("Logging in");
+      await this.changeAuthenticationState(
+        AUTHENTICATION_STATES.AUTHENTICATING
+      );
+
+      // get user data
+      const userData = await getUserData(token);
+      const assetsWithoutStatus = await getAssetsMetaData(token);
+
+      let assets = assetsWithoutStatus.map((asset) => ({
+        ...asset,
+        fontDownloadPath: "",
+        status: ASSETS_STATES.DOWNLOADING,
+      }));
+
+      assets = await this.downloadFonts(token, assets);
+
+      const res = await this.fontIO.activateOrDeactivateFonts(assets);
+
+      console.log("Assets Processed From FontIO", res);
+
+      assets = assets.map((asset) => ({
+        ...asset,
+        status: res[asset.fontId]
+          ? ASSETS_STATES.ACTIVATED
+          : ASSETS_STATES.INSTALL_FAILED,
+      }));
+
+      await this.changeAuthenticationState(AUTHENTICATION_STATES.AUTHENTICATED);
+      await this.setData({
+        userData,
+        assets,
+      });
+      console.log("Login Completed");
+      this.sendLoginData();
+    } catch (error) {
+      console.error("Error while logging in", error);
+      await this.changeAuthenticationState(
+        AUTHENTICATION_STATES.UNAUTHENTICATED
+      );
+      this.sendLoginData({
+        errorMesssage: error.message,
+      });
+    }
+  }
+
+  async logout() {
+    try {
+      console.log("Logging out");
+      await this.changeAuthenticationState(
+        AUTHENTICATION_STATES.UNAUTHENTICATING
+      );
+      this.cleanUpAndPrepareFontsPath(this.userData.token);
+      console.log("Fonts Path cleaned up");
+      await this.fontIO.deactivateAllFonts();
+      console.log("All Fonts Deactivated");
+      await this.changeAuthenticationState(
+        AUTHENTICATION_STATES.UNAUTHENTICATED
+      );
+      this.setData({
+        userData: {},
+        assets: [],
+      });
+      this.sendLoginData();
+    } catch (error) {
+      console.error("Error while logging out", error);
+      await this.changeAuthenticationState(AUTHENTICATION_STATES.AUTHENTICATED);
+      this.sendLoginData({
+        errorMesssage: error.message,
+      });
+    }
+  }
+
+  setUpStoreData() {
+    this.userData = this.store.get("user");
+    this.assets = this.store.get("assets");
+    this.authenticationState = isEmptyOrNil(this.userData)
+      ? AUTHENTICATION_STATES.UNAUTHENTICATED
+      : AUTHENTICATION_STATES.AUTHENTICATED;
+  }
+
+  async setData({ userData, assets }) {
+    this.userData = userData;
+    this.assets = assets;
+    await this.store.set("user", userData);
+    await this.store.set("assets", assets);
+  }
+
+  async changeAuthenticationState(state) {
+    this.authenticationState = state;
+  }
+
+  cleanUpAndPrepareFontsPath(token) {
+    const zipPath = path.join(this.zipDownloadPath, `${token}.zip`);
+    const fontsPath = this.fontsPath;
+
+    if (fs.existsSync(zipPath)) {
+      fs.unlinkSync(zipPath);
+    }
+    if (fs.existsSync(fontsPath)) {
+      fs.rmSync(fontsPath, { recursive: true });
+    }
+
+    return {
+      zipPath,
+      fontsPath,
+    };
+  }
+
+  async downloadFonts(token, assets) {
+    const { zipPath, fontsPath } = this.cleanUpAndPrepareFontsPath(token);
+    console.log("Fonts Path cleaned up Before Downloading Again");
+
+    await downloadFiles(token, zipPath);
+    console.log("Zip file downloaded");
+    await unzipFile(zipPath, fontsPath);
+    console.log("Zip file unzipped");
+
+    return assets.map((asset) => ({
+      ...asset,
+      fontDownloadPath: getDownloadPathForFont(fontsPath, asset.fontMd5),
+    }));
+  }
 }
 
 module.exports = App;

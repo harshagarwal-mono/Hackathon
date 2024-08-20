@@ -1,8 +1,11 @@
+const { map, } = require('ramda');
 const fetch = require('electron-fetch').default;
 const fs = require('fs');
 const unzipper = require('unzipper');
+const path = require('path');
+const { isEmptyOrNil } = require('./utils');
 
-const baseUrl = 'http://alocalhost:3000';
+const baseUrl = 'http://localhost:3000';
 
 const getAssetsMetaData = async (token) => {
     const url = `${baseUrl}/fonts/${token}/metadata`;
@@ -12,15 +15,20 @@ const getAssetsMetaData = async (token) => {
     return map(({ 
         md5, fullName, psName, family,
     }) => ({
-        FontMd5: md5,
-        FontName: fullName,
-        FontId: md5,
-        FontPsName: psName,
-        FontFamilyName: family,
+        fontMd5: md5,
+        fontName: fullName,
+        fontId: md5,
+        fontPsName: psName,
+        fontFamilyName: family,
     }), data);
 }
 
 const getUserData = async (token) => {
+    return {
+        name: 'John Doe',
+        email: 'johndoe@email.com',
+        token,
+    };
     const url = `${baseUrl}/fonts/${token}/user`;
     const response = await fetch(url);
     const data = await response.json();
@@ -36,10 +44,29 @@ const downloadFiles = async (token, downloadPath) => {
         throw new Error(`Failed to download file: ${response.statusText}`);
     }
 
+    const data = await response.json();
+    const { status, url: downloadUrl } = data;
+
+    if (status !== 'success') {
+        throw new Error(`Failed to download file with status : ${status}`);
+    }
+   
+    if (isEmptyOrNil(downloadUrl)) {
+        throw new Error(`Failed to download file with empty url`);
+    }
+
+    const directory = path.dirname(downloadPath);
+
+    if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+    }
+
+    const downloadResponse = await fetch(downloadUrl);
+
     const fileStream = fs.createWriteStream(downloadPath);
     return new Promise((resolve, reject) => {
-        response.body.pipe(fileStream);
-        response.body.on('error', (err) => {
+        downloadResponse.body.pipe(fileStream);
+        downloadResponse.body.on('error', (err) => {
             reject(new Error(`Failed to download file: ${err.message}`));
         });
         fileStream.on('finish', () => {
@@ -49,9 +76,20 @@ const downloadFiles = async (token, downloadPath) => {
 };
 
 const unzipFile = async (zipFilePath, outputDir) => {
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
     return fs.createReadStream(zipFilePath)
         .pipe(unzipper.Extract({ path: outputDir }))
         .promise();
+};
+
+const getDownloadPathForFont = (fontsDir, fontMd5) => {
+    const fontDownloadDirPath = path.join(fontsDir, fontMd5);
+    const files = fs.readdirSync(fontDownloadDirPath);
+    const [file] = files;
+    return path.join(fontDownloadDirPath, file);
 };
 
 module.exports = {
@@ -59,4 +97,5 @@ module.exports = {
     getUserData,
     downloadFiles,
     unzipFile,
+    getDownloadPathForFont,
 }

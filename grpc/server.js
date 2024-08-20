@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
+const { isEmptyOrNil } = require('../utils');
 
 const trayProtoPath = path.join(__dirname, '..', 'protos', 'Tray.proto');
 const packageDefinition = protoLoader.loadSync(trayProtoPath);
@@ -15,10 +16,10 @@ function FireAndForget(relay, call, cb) {
     const { request, } = call;
     const { type, data, } = request;
 
-    console.log('Received Message on Grpc Server: ', type);
+    console.log('Received Message on Grpc Server: ', type, data);
 
     try {
-        const parsedData = isNilOrEmpty(data) ? {} : JSON.parse(data);
+        const parsedData = isEmptyOrNil(data) ? {} : JSON.parse(data);
         relay.emit(type, parsedData);
     } catch (error) {
         console.error('Error in parsing data: ', error);
