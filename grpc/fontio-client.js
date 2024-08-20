@@ -51,7 +51,7 @@ class FontIOClient {
      * @param {Arra<Object>} data 
      * @returns 
      */
-    requestToDeactvateFonts(requestId, data) {
+    requestToDeactivateFonts(requestId, data) {
         const preparedData = data.map(({ fontId, fontPath, context }) => {
             return {
                 FontId: fontId,
