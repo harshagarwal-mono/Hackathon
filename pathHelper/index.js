@@ -13,13 +13,8 @@ const getResourcesDir = () => {
 };
 
 const getFontIOPath = () => {
-    const resourcesDir = getResourcesDir();
-
-    if (process.platform === 'darwin') {
-        return path.join(resourcesDir, 'helperServices', 'MonotypeFontsFontIO');
-    }
-
-    return path.join(resourcesDir, 'helperServices', 'MonotypeFontsFontIO.exe');
+    return '/Applications/FontFriend/.Components/MonotypeFontsFontIO';
+    // return '/Applications/Monotype Fonts/.Components/Services/CoreServices/MonotypeFontsFontIO';
 };
 
 module.exports = {

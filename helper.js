@@ -10,6 +10,11 @@ const baseUrl = 'http://localhost:3000';
 const getAssetsMetaData = async (token) => {
     const url = `${baseUrl}/fonts/${token}/metadata`;
     const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to get assets metadata: ${response.statusText}`);
+    }
+
     const data = await response.json();
 
     return map(({ 
@@ -24,13 +29,13 @@ const getAssetsMetaData = async (token) => {
 }
 
 const getUserData = async (token) => {
-    return {
-        name: 'John Doe',
-        email: 'johndoe@email.com',
-        token,
-    };
     const url = `${baseUrl}/fonts/${token}/user`;
     const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to get user data: ${response.statusText}`);
+    }
+
     const data = await response.json();
 
     return data;

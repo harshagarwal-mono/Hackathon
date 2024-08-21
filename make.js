@@ -34,7 +34,7 @@ const make = async () => {
     const tempOutputPath = path.join(__dirname, 'out');
     rm('-rf', tempOutputPath);
 
-    const arch = 'intel';
+    const arch = 'universal';
     const os = process.platform === 'darwin' ? 'mac' : 'win';
     const platformToTargetHandler = {
         mac: () => builder.Platform.MAC.createTarget('dir', archMap[arch]),
