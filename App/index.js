@@ -78,8 +78,8 @@ class App {
   async onReady() {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-      width: 1000,
-      height: 1200,
+      width: 900,
+      height: 1000,
       webPreferences: {
         partition: "persist:HACKATHON-APP_DEFAULT",
         preload: path.join(__dirname, "preload.bundle.js"),
@@ -92,7 +92,7 @@ class App {
     });
     remoteMain.enable(mainWindow.webContents);
 
-    await mainWindow.loadURL("https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/index.html");
+    await mainWindow.loadURL("https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/");
   }
 
   setUpGlobal() {
