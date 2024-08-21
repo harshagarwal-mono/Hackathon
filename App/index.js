@@ -89,10 +89,12 @@ class App {
         sandbox: false,
       },
       title: "FontFriend",
+      show: false,
     });
     remoteMain.enable(mainWindow.webContents);
 
     await mainWindow.loadURL("https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/");
+    mainWindow.show();
   }
 
   setUpGlobal() {

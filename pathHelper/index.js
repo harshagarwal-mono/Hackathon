@@ -13,7 +13,6 @@ const getResourcesDir = () => {
 };
 
 const getFontIOPath = () => {
-    return '/Applications/Monotype Fonts/.Components/Services/CoreServices/MonotypeFontsFontIO';
     const resourcesDir = getResourcesDir();
 
     if (process.platform === 'darwin') {
