@@ -1,8 +1,10 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, net } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const remoteMain = require("@electron/remote/main");
 const { userInfo } = require("os");
+const { pathToFileURL } = require("url");
+
 const GrpcServer = require("../grpc/server.js");
 const FontIOClient = require("../grpc/fontio-client.js");
 const FontIO = require("../FontIO");
@@ -59,7 +61,11 @@ class App {
     this.zipDownloadPath = path.join(userDataPath, "downloads");
     this.fontsPath = path.join(appDataPath, "Monotype Fonts", ".fonts");
     this.fontIOPath = getFontIOPath();
-    this.fontIOWatcher = new ProcessWatcher(this.relay, this.fontIOPath, "FontIO");
+    this.fontIOWatcher = new ProcessWatcher(
+      this.relay,
+      this.fontIOPath,
+      "FontIO"
+    );
 
     this.serverEndPoint = connectionInputGrcpServer[process.platform].endPoint;
     this.connectionEndPoint =
@@ -92,9 +98,22 @@ class App {
       show: false,
     });
     remoteMain.enable(mainWindow.webContents);
+    App.setUpCustomProtocols(mainWindow.webContents.session.protocol);
 
-    await mainWindow.loadURL("https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/");
+    await mainWindow.loadURL(
+      "https://enterprise-preprod.monotype.com/dtapppwa/0.0.0/"
+    );
     mainWindow.show();
+  }
+
+  static setUpCustomProtocols(protocolObj) {
+    protocolObj.handle("font-files", (request) => {
+      const filePath = request.url.slice("font-files:".length);
+      const decodedFilePath = decodeURIComponent(filePath);
+      const fileUrl = pathToFileURL(decodedFilePath).href;
+
+      return net.fetch(fileUrl);
+    });
   }
 
   setUpGlobal() {
@@ -249,10 +268,13 @@ class App {
   async startFontIO() {
     return new Promise(async (resolve) => {
       const handleFontIOInit = () => {
-        this.relay.removeListener("FetchInstalledFontCanStartResponse", handleFontIOInit);
+        this.relay.removeListener(
+          "FetchInstalledFontCanStartResponse",
+          handleFontIOInit
+        );
         resolve(true);
-      }
-      this.relay.on('FetchInstalledFontCanStartResponse', handleFontIOInit);
+      };
+      this.relay.on("FetchInstalledFontCanStartResponse", handleFontIOInit);
       this.fontIOWatcher.start();
     });
   }
