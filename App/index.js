@@ -24,6 +24,7 @@ const {
 const { isEmptyOrNil } = require("../utils/index.js");
 const { getFontIOPath } = require("../pathHelper/index.js");
 const ProcessWatcher = require("../ProcessWatcher.js");
+const { getDeviceDetails } = require("../utils/index.js");
 
 const appDataPath = app.getPath("appData");
 const userDataPath = app.getPath("userData");
@@ -66,6 +67,7 @@ class App {
       this.fontIOPath,
       "FontIO"
     );
+    this.machineDetails = getDeviceDetails();
 
     this.serverEndPoint = connectionInputGrcpServer[process.platform].endPoint;
     this.connectionEndPoint =
@@ -119,6 +121,7 @@ class App {
   setUpGlobal() {
     global.MAS_APP = {};
     global.MAS_APP.relay = this.relay;
+    global.MAS_APP.deviceDetails = this.machineDetails;
   }
 
   async setUpGrpcServer() {

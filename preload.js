@@ -4,10 +4,12 @@ const preloadDefinition = () => {
   const preload = () => {
       const {
           relay,
+          deviceDetails,
       } = remote.getGlobal('MAS_APP');
 
       global.MAS_APP = {
          relay,
+         deviceDetails,
       };
   };
 
